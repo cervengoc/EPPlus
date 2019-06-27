@@ -228,6 +228,7 @@
     <Compile Include="Utils\GuardingTests.cs" />
     <Compile Include="Utils\SqRefUtilityTests.cs" />
     <Compile Include="VBATests.cs" />
+    <Compile Include="WorksheetLazyLoadingTests.cs" />
     <Compile Include="WorksheetsTests.cs" />
   </ItemGroup>
   <ItemGroup>

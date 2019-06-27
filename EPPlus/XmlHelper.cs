@@ -62,7 +62,7 @@ namespace OfficeOpenXml
 		}
 		//internal bool ChangedFlag;
 		internal XmlNamespaceManager NameSpaceManager { get; set; }
-		internal XmlNode TopNode { get; set; }
+		internal virtual XmlNode TopNode { get; set; }
 		string[] _schemaNodeOrder = null;
 		/// <summary>
 		/// Schema order list

@@ -123,8 +123,37 @@ namespace OfficeOpenXml
 		internal List<SharedStringItem> _sharedStringsList = new List<SharedStringItem>(); //Used when reading cells.
 		internal ExcelNamedRangeCollection _names;
 		internal int _nextDrawingID = 0;
-		internal int _nextTableID = int.MinValue;
-        internal int _nextPivotTableID = int.MinValue;
+		private int __nextTableID = int.MinValue;
+
+        internal int NextTableID
+        {
+            get
+            {
+                ReadAllTables();
+                return __nextTableID;
+            }
+            set
+            {
+                ReadAllTables();
+                __nextTableID = value;
+            }
+        }
+
+        internal int NextPivotTableID
+        {
+            get
+            {
+                ReadAllTables();
+                return __nextPivotTableID;
+            }
+            set
+            {
+                ReadAllTables();
+                __nextPivotTableID = value;
+            }
+        }
+
+        internal int __nextPivotTableID = int.MinValue;
 		internal XmlNamespaceManager _namespaceManager;
         internal FormulaParser _formulaParser = null;
 	    internal FormulaParserManager _parserManager;
@@ -144,15 +173,19 @@ namespace OfficeOpenXml
 					foreach (XmlNode node in nl)
 					{
 						XmlNode n = node.SelectSingleNode("d:t", NameSpaceManager);
+                        SharedStringItem ssi;
 						if (n != null)
 						{
-                            _sharedStringsList.Add(new SharedStringItem() { Text = ConvertUtil.ExcelDecodeString(n.InnerText) });
+                            ssi = new SharedStringItem() { Text = ConvertUtil.ExcelDecodeString(n.InnerText) };
 						}
 						else
 						{
-							_sharedStringsList.Add(new SharedStringItem() { Text = node.InnerXml, isRichText = true });
+                            ssi = new SharedStringItem() { Text = node.InnerXml, isRichText = true };
 						}
-					}
+
+                        _sharedStringsList.Add(ssi);
+                        this._sharedStrings[ssi.Text] = ssi;
+                    }
 				}
                 //Delete the shared string part, it will be recreated when the package is saved.
                 foreach (var rel in Part.GetRelationships())
@@ -833,6 +866,7 @@ namespace OfficeOpenXml
 				{
 					worksheet.View.WindowProtection = true;
 				}
+
 				worksheet.Save();
                 worksheet.Part.SaveHandler = worksheet.SaveHandler;
 			}
@@ -886,6 +920,11 @@ namespace OfficeOpenXml
 		{
 			foreach (var sheet in _package.Workbook.Worksheets)
 			{
+                if (!sheet.IsLoaded)
+                {
+                    continue;
+                }
+
                 if (!(sheet is ExcelChartsheet))
                 {
                     sheet.DataValidations.ValidateAll();
@@ -893,7 +932,7 @@ namespace OfficeOpenXml
 			}
 		}
 
-        private void SaveSharedStringHandler(ZipOutputStream stream, CompressionLevel compressionLevel, string fileName)
+        private bool SaveSharedStringHandler(ZipOutputStream stream, CompressionLevel compressionLevel, string fileName)
 		{
             //Packaging.ZipPackagePart stringPart;
             //if (_package.Package.PartExists(SharedStringsUri))
@@ -948,7 +987,10 @@ namespace OfficeOpenXml
             sw.Flush();
             // Issue 15252: Save SharedStrings only once
             //Part.CreateRelationship(UriHelper.GetRelativeUri(WorkbookUri, SharedStringsUri), Packaging.TargetMode.Internal, ExcelPackage.schemaRelationships + "/sharedStrings");
-		}
+
+            return true;
+        }
+
 		private void UpdateDefinedNamesXml()
 		{
 			try
@@ -1150,27 +1192,27 @@ namespace OfficeOpenXml
             }   
         }
 
-        internal void ReadAllTables()
+        private void ReadAllTables()
         {
-            if (_nextTableID > 0) return;
-            _nextTableID = 1;
-            _nextPivotTableID = 1;
+            if (__nextTableID > 0) return;
+            __nextTableID = 1;
+            __nextPivotTableID = 1;
             foreach (var ws in Worksheets)
             {
                 if (!(ws is ExcelChartsheet)) //Fixes 15273. Chartsheets should be ignored.
                 {
                     foreach (var tbl in ws.Tables)
                     {
-                        if (tbl.Id >= _nextTableID)
+                        if (tbl.Id >= __nextTableID)
                         {
-                            _nextTableID = tbl.Id + 1;
+                            __nextTableID = tbl.Id + 1;
                         }
                     }
                     foreach (var pt in ws.PivotTables)
                     {
-                        if (pt.CacheID >= _nextPivotTableID)
+                        if (pt.CacheID >= __nextPivotTableID)
                         {
-                            _nextPivotTableID = pt.CacheID + 1;
+                            __nextPivotTableID = pt.CacheID + 1;
                         }
                     }
                 }

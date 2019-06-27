@@ -62,9 +62,9 @@ namespace OfficeOpenXml.Table.PivotTable
         {
             _pivotTables.Add(tbl);
             _pivotTableNames.Add(tbl.Name, _pivotTables.Count - 1);
-            if (tbl.CacheID >= _ws.Workbook._nextPivotTableID)
+            if (tbl.CacheID >= _ws.Workbook.NextPivotTableID)
             {
-                _ws.Workbook._nextPivotTableID = tbl.CacheID + 1;
+                _ws.Workbook.NextPivotTableID = tbl.CacheID + 1;
             }
             return tbl;
         }
@@ -98,7 +98,7 @@ namespace OfficeOpenXml.Table.PivotTable
                 }
             }
             
-            return Add(new ExcelPivotTable(_ws, Range, Source, Name, _ws.Workbook._nextPivotTableID++));
+            return Add(new ExcelPivotTable(_ws, Range, Source, Name, _ws.Workbook.NextPivotTableID++));
         }
 
         internal string GetNewTableName()

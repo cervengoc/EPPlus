@@ -362,10 +362,8 @@ namespace OfficeOpenXml
                         name = string.Format("Table{0}", ++ix);
                     }
                 }
-                //ensure the _nextTableID value has been initialized - Pull request by WillR
-                _pck.Workbook.ReadAllTables();
-
-                int Id = _pck.Workbook._nextTableID++;
+                
+                int Id = _pck.Workbook.NextTableID++;
                 prevName = name;
                 XmlDocument xmlDoc = new XmlDocument();
                 xmlDoc.LoadXml(xml);
@@ -376,7 +374,7 @@ namespace OfficeOpenXml
 
                 //var uriTbl = new Uri(string.Format("/xl/tables/table{0}.xml", Id), UriKind.Relative);
                 var uriTbl = GetNewUri(_pck.Package, "/xl/tables/table{0}.xml", ref Id);
-                if (_pck.Workbook._nextTableID < Id) _pck.Workbook._nextTableID = Id;
+                if (_pck.Workbook.NextTableID < Id) _pck.Workbook.NextTableID = Id;
 
                 var part = _pck.Package.CreatePart(uriTbl, "application/vnd.openxmlformats-officedocument.spreadsheetml.table+xml", _pck.Compression);
                 StreamWriter streamTbl = new StreamWriter(part.GetStream(FileMode.Create, FileAccess.Write));
@@ -448,9 +446,9 @@ namespace OfficeOpenXml
                 }
                 xml = xmlDoc.OuterXml;
 
-                int Id = _pck.Workbook._nextPivotTableID++;
+                int Id = _pck.Workbook.NextPivotTableID++;
                 var uriTbl = GetNewUri(_pck.Package, "/xl/pivotTables/pivotTable{0}.xml", ref Id);
-                if (_pck.Workbook._nextPivotTableID < Id) _pck.Workbook._nextPivotTableID = Id;
+                if (_pck.Workbook.NextPivotTableID < Id) _pck.Workbook.NextPivotTableID = Id;
                 var partTbl = _pck.Package.CreatePart(uriTbl, ExcelPackage.schemaPivotTable , _pck.Compression);
                 StreamWriter streamTbl = new StreamWriter(partTbl.GetStream(FileMode.Create, FileAccess.Write));
                 streamTbl.Write(xml);

@@ -39,7 +39,7 @@ namespace OfficeOpenXml.Packaging
 {
     internal class ZipPackagePart : ZipPackageRelationshipBase, IDisposable
     {
-        internal delegate void SaveHandlerDelegate(ZipOutputStream stream, CompressionLevel compressionLevel, string fileName);
+        internal delegate bool SaveHandlerDelegate(ZipOutputStream stream, CompressionLevel compressionLevel, string fileName);
 
         internal ZipPackagePart(ZipPackage package, ZipEntry entry)
         {
@@ -137,18 +137,14 @@ namespace OfficeOpenXml.Packaging
             byte[] b;
             if (SaveHandler == null)
             {
-                b = GetStream().ToArray();
-                if (b.Length == 0)   //Make sure the file isn't empty. DotNetZip streams does not seems to handle zero sized files.
-                {
-                    return;
-                }
-                os.CompressionLevel = (OfficeOpenXml.Packaging.Ionic.Zlib.CompressionLevel)CompressionLevel;
-                os.PutNextEntry(Uri.OriginalString);
-                os.Write(b, 0, b.Length);
+                WriteOriginal(os);
             }
             else
             {
-                SaveHandler(os, (CompressionLevel)CompressionLevel, Uri.OriginalString);
+                if (!SaveHandler(os, (CompressionLevel) CompressionLevel, Uri.OriginalString))
+                {
+                    WriteOriginal(os);
+                }
             }
 
             if (_rels.Count > 0)
@@ -157,9 +153,20 @@ namespace OfficeOpenXml.Packaging
                 var name = Path.GetFileName(f);
                 _rels.WriteZip(os, (string.Format("{0}_rels/{1}.rels", f.Substring(0, f.Length - name.Length), name)));
             }
-            b = null;
         }
 
+        private void WriteOriginal(ZipOutputStream os)
+        {
+            var b = GetStream().ToArray();
+            if (b.Length == 0)   //Make sure the file isn't empty. DotNetZip streams does not seems to handle zero sized files.
+            {
+                return;
+            }
+
+            os.CompressionLevel = (OfficeOpenXml.Packaging.Ionic.Zlib.CompressionLevel)CompressionLevel;
+            os.PutNextEntry(Uri.OriginalString);
+            os.Write(b, 0, b.Length);
+        }
 
         public void Dispose()
         {

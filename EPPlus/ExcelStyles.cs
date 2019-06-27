@@ -636,6 +636,7 @@ namespace OfficeOpenXml
         public void UpdateXml()
         {
             RemoveUnusedStyles();
+            var hasNotLoadedWorksheets = _wb.Worksheets.Any(e => !e.IsLoaded);
 
             //NumberFormat
             XmlNode nfNode=_styleXml.SelectSingleNode(NumberFormatsPath, _nameSpaceManager);
@@ -683,7 +684,7 @@ namespace OfficeOpenXml
 
             foreach (ExcelFontXml fnt in Fonts)
             {
-                if (fnt.useCnt > 0/* && fnt.newID<0*/)
+                if (fnt.useCnt > 0/* && fnt.newID<0*/ || hasNotLoadedWorksheets)
                 {
                     fntNode.AppendChild(fnt.CreateXmlNode(_styleXml.CreateElement("font", ExcelPackage.schemaMain)));
                     fnt.newID = count;
@@ -701,7 +702,7 @@ namespace OfficeOpenXml
             Fills[1].useCnt = 1;    //Must exist (gray125);
             foreach (ExcelFillXml fill in Fills)
             {
-                if (fill.useCnt > 0)
+                if (fill.useCnt > 0 || hasNotLoadedWorksheets)
                 {
                     fillsNode.AppendChild(fill.CreateXmlNode(_styleXml.CreateElement("fill", ExcelPackage.schemaMain)));
                     fill.newID = count;
@@ -718,7 +719,7 @@ namespace OfficeOpenXml
             Borders[0].useCnt = 1;    //Must exist blank;
             foreach (ExcelBorderXml border in Borders)
             {
-                if (border.useCnt > 0)
+                if (border.useCnt > 0 || hasNotLoadedWorksheets)
                 {
                     bordersNode.AppendChild(border.CreateXmlNode(_styleXml.CreateElement("border", ExcelPackage.schemaMain)));
                     border.newID = count;
@@ -772,7 +773,7 @@ namespace OfficeOpenXml
             int xfix = 0;
             foreach (ExcelXfs xf in CellXfs)
             {
-                if (xf.useCnt > 0 && !(normalIx >= 0 && NamedStyles[normalIx].StyleXfId == xfix))
+                if ((xf.useCnt > 0 || hasNotLoadedWorksheets) && !(normalIx >= 0 && NamedStyles[normalIx].StyleXfId == xfix))
                 {
                     cellXfsNode.AppendChild(xf.CreateXmlNode(_styleXml.CreateElement("xf", ExcelPackage.schemaMain)));
                     xf.newID = count;
@@ -787,6 +788,8 @@ namespace OfficeOpenXml
             foreach (var ws in _wb.Worksheets)
             {
                 if (ws is ExcelChartsheet) continue;
+                if (!ws.IsLoaded) continue;
+
                 foreach (var cf in ws.ConditionalFormatting)
                 {
                     if (cf.Style.HasValue)
